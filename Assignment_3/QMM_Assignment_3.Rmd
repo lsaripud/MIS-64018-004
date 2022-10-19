@@ -1,0 +1,153 @@
+---
+title: "Assignment_3"
+author: "Lava Kumar"
+date: '2022-10-19'
+output:
+  html_document: default
+  pdf_document: default
+---
+***1)Formulation and solving this transportation problem using R.***
+
+*Loading all the required packages.*
+```{r}
+library("lpSolveAPI")
+library("lpSolve")
+library("tinytex")
+```
+
+*Creation of table as per mentioned in the question.*
+```{r}
+tab <- matrix(c(22,14,30,600,100,
+                 16,20,24,625,120,
+                 80,60,70,"-","-"), ncol=5,byrow=T)
+colnames(tab) <- c("Warehouse1", "Warehouse2", "Warehouse3", "ProductionCost", "ProductionCapacity")
+rownames(tab) <- c("PlantA", "PlantB", "Monthly Demand")
+tab <- as.table(tab)
+tab
+```  
+
+***The Objective Function is to Minimize the Transportation cost***
+
+$$ Z = 622X_{11} + 614X_{12} + 630X_{13} + 0X_{14} + 641X_{21} + 645X_{22} + 649X_{23} + 0X_{24}$$
+
+
+***Subject to the following constraints***
+
+
+$${\text Supply \hspace{2mm} Constraints}$$
+$$X_{11} + X_{12} + X_{13} + X_{14} <= 100$$
+$$X_{21} + X_{22} + X_{23} + X_{24} <= 120$$
+
+$${\text Demand \hspace{2mm} Constraints}$$
+$$X_{11} + X_{21}>= 80$$
+$$X_{12} + X_{22}>= 60$$
+$$X_{13} + X_{23}>= 70$$
+$$X_{14} + X_{24}>= 10$$
+
+$${\text  Non - Negativity \hspace{2mm} Constraints} $$
+$$X_{ij} >= 0 \hspace{4mm} \text {Where i = 1,2 and j = 1,2,3,4} $$
+
+
+```{r}
+#Since demand is not equal to supply creating dummy variables 
+#Creating a matrix for the given objective function
+costs <- matrix(c(622,614,630,0,
+                 641,645,649,0), ncol=4, byrow=T)
+#Defining the column names and row names
+colnames(costs) <- c("Warehouse1", "Warehouse2", "Warehouse3", "Dummy")
+rownames(costs) <- c("PlantA", "PlantB")
+costs
+  
+#Defining the row signs and row values 
+row.signs <- rep("<=",2)
+row.rhs <- c(100,120)
+#Since it's supply function it cannot be greater than the specified units.
+#Defining the column signs and column values
+col.signs <- rep(">=",4)
+col.rhs <- c(80,60,70,10)
+#Since it's demand function it can be greater than the specified units.
+#Running the lp.transport function 
+lptrans <- lp.transport(costs,"min",row.signs,row.rhs,col.signs,col.rhs)
+```
+
+```{r}
+#Getting the objective value
+lptrans$objval
+```
+
+*The minimization value so obtained is* ***$132,790*** *This is the lowest total cost that may be obtained by including the costs of manufacturing and transporting the defibrillators.*
+
+```{r}
+#Getting the constraints value
+lptrans$solution
+```
+
+***80X21 AEDs*** *in Plant B - Warehouse1*\vspace{1mm}\newline
+***60X12 AEDs*** *in Plant A - Warehouse2*\vspace{1mm}\newline
+***40X13 AEDs*** *in Plant A - Warehouse3*\vspace{1mm}\newline
+***30X23 AEDs*** *in Plant B - Warehouse3*\hspace{1mm}*It should be produced at each factory and then transported to each of the three wholesaler warehouses in order to lower the overall cost of manufacture and transportation.X24 is a "throw-away variable" since "10" appears in the fourth variable.*
+\vspace{2mm}\newline
+
+***2)Formulating the dual of the above transportation problem***
+\vspace{1mm}\newline
+
+*Since the primal was to minimize the transportation cost the dual of it would be to maximize the value added(VA).*
+
+*We are aware that the number of constants in dual is equal to the number of variables in primal. The primary of the LP is asked in the first question. We shall maximize in the dual because we choose to minimize in the primal. Let's utilize the dual problem's variables P and WH.*
+```{r}
+disdu <- matrix(c(622,614,630,100,"P_A",
+641,645,649,120,"P_B",
+80,60,70,220,"-",
+"WH_1","WH_2","WH_3","-","-"),ncol=5,nrow=4,byrow=TRUE)
+colnames(disdu) <- c("W1","W2","W3","Prod Cap","Supply (Dual)")
+rownames(disdu) <- c("PlantA","PlantB","Monthly Demand","Demand (Dual)")
+disdu <- as.table(disdu)
+disdu
+```
+
+$$ {\text Maximize \hspace{3mm} VA = } \hspace{3mm} 80WH_1 + 60WH_2 + 70WH_3 - 100P_A - 120P_B$$
+\vspace{1mm}\newline
+***Subject to the following constraints***
+
+$$ {\text Total \hspace{2mm} Payments \hspace{2mm} Constraints} $$
+$$ WH_1 - P_A >= 622 $$
+$$ WH_2 - P_A >= 614$$
+$$ WH_3 - P_A >= 630$$
+$$ WH_1 - P_B >= 641$$
+$$ WH_2 - P_B >= 645$$
+$$ WH_3 - P_B >= 649$$
+\newline
+$${\text Where \hspace{2mm} WH_1 = Warehouse \hspace{2mm} 1}$$
+$$\hspace{2mm} WH_2 = Warehouse \hspace{2mm} 2$$
+$$\hspace{2mm} WH_3 = Warehouse \hspace{2mm} 3$$
+$$\hspace{2mm} P_A = Plant \hspace{2mm} 1$$
+$$\hspace{2mm} P_B = Plant \hspace{2mm} 2$$
+\newline
+***3)Economic Interpretation of the dual***
+$$WH_1 <= 622 + P_A $$
+$$WH_2 <= 614 + P_A $$
+$$WH_3 <= 630 + P_A $$
+$$WH_1 <= 641 + P_B$$
+$$WH_2 <= 645 + P_B$$
+$$WH_3 <= 649 + P_B$$
+\newline
+$$ \text From \hspace{3mm} the \hspace{3mm} above \hspace{3mm} we \hspace{3mm} get \hspace{3mm} to \hspace{3mm} see \hspace{3mm} that \hspace{3mm} WH_1 - P_A >= 622$$
+\newline
+$$ that \hspace{3mm} can \hspace{3mm} be \hspace{3mm} exponented \hspace{3mm} as \hspace{3mm} WH_1 <= 622 + P_A$$
+\newline
+$$ \text Here \hspace{3mm} WH_1 \hspace{3mm} is \hspace{3mm} considered \hspace{3mm} as \hspace{3mm} the \hspace{3mm} price \hspace{3mm} payments \hspace{3mm} being \hspace{3mm} received \hspace{3mm} at \hspace{3mm} the \hspace{3mm} origin \hspace{3mm} which \hspace{3mm} is \hspace{3mm} nothing \hspace{3mm} else, \hspace{3mm}$$ 
+$$\text but \hspace{3mm} the \hspace{3mm} revenue,\hspace{3mm} whereas\hspace{3mm} P_A + 622 \hspace{3mm} is \hspace{3mm} the \hspace{3mm} money \hspace{3mm} paid \hspace{3mm} at \hspace{3mm} the \hspace{3mm} origin \hspace{3mm} at \hspace{3mm} Plant_A \hspace{3mm}$$
+\newline
+$$\text Therefore \hspace{3mm} the \hspace{3mm} equation \hspace{3mm} turns, \hspace{3mm} out\hspace{3mm} to\hspace{3mm} be \hspace{3mm} MR_1 >= MC_1.$$
+\newline
+$$\text For \hspace{3mm} a \hspace{3mm} profit \hspace{3mm} maximization, \hspace{3mm} The \hspace{3mm} Marginal \hspace{3mm} Revenue (MR)\hspace{3mm} should \hspace{3mm}be \hspace{3mm}equal\hspace{3mm} to\hspace{3mm} Marginal\hspace{3mm} Costs(MC)$$
+\newline
+$$ \text Therefore,\hspace{3mm}
+MR_1 = MC_1$$
+\newline
+$$\text Based \hspace{3mm} on\hspace{3mm} above\hspace{3mm} interpretation,\hspace{3mm} we\hspace{3mm} can\hspace{3mm} conclude\hspace{3mm} that,$$
+$$\text Profit\hspace{3mm} maximization\hspace{3mm} happens\hspace{3mm} place \hspace{3mm} if\hspace{3mm} MC\hspace{3mm} is\hspace{3mm} equal\hspace{3mm} to\hspace{3mm} MR.$$
+\newline
+***If MR < MC, to obtain the marginal revenue, we must reduce the costs at the plants (MR).***
+ 
+***If MR > MC, to  obtain the Marginal Revenue (MR), we need to increase the production supply.***
