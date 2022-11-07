@@ -1,0 +1,94 @@
+---
+title: "QMM_Assignment_Mod_9"
+author: "Lava Kumar"
+date: "2022-11-06"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+*The Research and Development Division of the Emax Corporation has developed three new products. A decision now needs to be made on which mix of these products should be produced. Management wants primary consideration given to three factors:* 
+
+*1. Total Profit,* 
+
+*2. Stability in the workforce and*
+
+*3. Achieving an increase in the company’s earnings next year from the $75 million achieved this year.*
+
+***Objective Function***
+
+*Maximize Z = P - 6C - 3D, where*
+
+*P = Total discounted profit over the life of the new products,*
+
+*C = Change in either direction towards the current level of employment,*
+
+*D = decrease if any in next year’s earnings from the current year’s level.*
+
+
+*Setting default values to get a clean output*
+```{r}
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+*Loading the required packages*
+```{r}
+library(lpSolve)
+library(lpSolveAPI)
+library(Rglpk)
+library(slam)
+```
+
+*1.Defining y1p and y1m as the amount over (if any) and the amount under (if any) the employment level goal. Defining y2p and y2m in the same way for the goal regarding earnings next year. Defining x1, x2 and x3 as the production rates of Products 1, 2, and 3, respectively. Also expressing P in terms of x1, x2 and x3 and the objective function in terms of x1, x2, x3, y1p, y1m , y2p and y2m.*
+
+$$y_1^+ - y_1^- = 50 - 6 x1 - 4 x2 - 5 x3;$$
+
+$$y_2^+ - y_2^- = 75 - 8 x1 - 7 x2 - 5 x3;$$
+
+$$P = 20 x_1 + 15 x_2 + 25 x_3;$$
+
+**2. Express management objective function in terms of x1, x2, x3, y1+, y1- , y2+ and y2-.** 
+
+$$Max \hspace{.3cm}Z = 20 x_1 + 15 x_2 + 25 x_3 - 6 y_1^+ - 6 y_1^- - 3 y_2^-$$
+**3.Formulating and solving the linear programming model.**
+
+*Loading the LP file from the current directory and printing the model*
+
+```{r}
+Emax_Corp_fs <- read.lp("Emax_Corp.lp")
+print(Emax_Corp_fs)
+```
+*The effect of every one of the new items (per unit pace of production) on every one of these factors is displayed in the accompanying table:*
+```{r}
+Emax_Corp_table <- matrix(c("Total Profit", "Employment Level", "Earnings Next Year",
+                       20,6,8,
+                       15,4,7,
+                       25,5,5,
+                       "Maximize","=50",">=75",
+                       "Millions of Dollars", "Hundreds of Employees", "Millions of Dollars"), ncol=6, 
+                       byrow = F)
+colnames(Emax_Corp_table) <- c("Factor","Product 1", "Product 2", "Product 3", "Goal", "Units")
+as.table(Emax_Corp_table)
+```
+*Using the goal programming model to solve for the values of the objective and the variables*
+```{r}
+solve(Emax_Corp_fs)
+get.objective(Emax_Corp_fs)
+get.variables(Emax_Corp_fs)
+```
+***Findings:***
+
+*1. The company must combine the units X1, X2, and X3 in order to achieve maximum objective function.It is stated in X1 for Product 1, X2 for Product 2, and X3 for Product 3 that 20 units of Product 1 and 15 units of Product 2 cannot be produced because the resulting solution was "0".However, there is a change in X3, which states that the company can only produce 15 units of Product 3 to maximize profits.*
+
+
+*2. The objective was to maintain a level of employment that was stable, with the maximum number of employees remaining at 50 hundred , but in this instance, the company exceeded the employment levels by 25 hundred (y1p), for which they would be required to pay a penalty.*
+
+
+*3. The purpose of y2p and y2m was to determine whether or not the earnings for the following year would rise or fall from their current levels. The value "0" indicates that the earnings for the following year will not rise or fall in comparison to those of the previous year.As a result, earnings for the coming year won't change.*
+
+*4. The value of the objective function, which in our instance is 225 million dollars, identifies the profit that the company is striving to maximize.*
