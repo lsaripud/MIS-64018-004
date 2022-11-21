@@ -1,0 +1,106 @@
+---
+title: "QMM Assignment Moudle 11"
+author: "Lava Kumar"
+date: "2022-11-20"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+*AP is a shipping service that guarantees overnight delivery of packages in the continental US. The company has various hubs at major cities and airports across the country. Packages are received at hubs, and then shipped to intermediate hubs or to their final destination.*
+
+
+*The manager of the AP hub in Cleveland is concerned about labor costs, and is interested in determining the most effective way to schedule workers. The hub operates seven days a week, and the number of packages it handles varies from one day to another.*
+
+
+*Setting default values to get a clean output*
+```{r}
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+*For loading the lpSolveAPI Package*
+```{r}
+library("lpSolveAPI")
+```
+
+*For loading the lp file*
+```{r}
+Mod_dat <- read.lp("data.lp")
+print(Mod_dat)
+```
+
+*An estimate of the number of workers required each day of the week can be found in the table below.*
+
+```{r}
+Workers_Per_Day <- matrix(c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday",
+18,27,22,26,25,21,19),ncol=2,byrow = F)
+colnames(Workers_Per_Day) <- c("Day_of_the_week", "Workers_Required")
+as.table(Workers_Per_Day)
+```
+*Package handlers at AP are guaranteed a five-day work week with two consecutive days off. The base wage for the handlers is $750 per week. Workers working on Saturday or Sunday receive an additional $25 per day. The possible shifts and salaries for package handlers are:*
+```{r}
+Shifts_and_wages <- matrix(c(1,2,3,4,5,6,7,
+                               "Sunday and Monday","Monday and Tuesday","Tuesday and Wednesday",
+  "Wednesday and Thursday","Thursday and Friday",
+"Friday and Saturday","Saturday and Sunday", "$775",
+"$800","$800","$800","$800","$775","$750"),ncol=3,byrow=F)
+colnames(Shifts_and_wages) <- c("Shift", "Days_Off", "Wage")
+as.table(Shifts_and_wages)
+```
+*Running the lp model*
+```{r}
+solve(Mod_dat)
+```
+*We are aware that there is a model if we obtain 0 as the value.*
+
+
+*Total Cost - Objective Function*
+```{r}
+get.objective(Mod_dat)
+```
+*Total Cost = 25.675*
+
+*"25,675$" is the total cost to the company to ensure that there a are enough workers available each day to work and that total wage expenses are kept as low as possible..*
+
+
+*How many workers are available each day to work - Variables*
+```{r}
+get.variables(Mod_dat)
+```
+*The variables are labeled from x1, x2.......x7 where,*
+
+*x1 = Number of workers assigned to shift 1 = 2*
+
+*x2 = Number of workers assigned to shift 2 = 4*
+
+*x3 = Number of workers assigned to shift 3 = 5*
+
+*x4 = Number of workers assigned to shift 4 = 0*
+
+*x5 = Number of workers assigned to shift 5 = 8*
+
+*x6 = Number of workers assigned to shift 6 = 1*
+
+*x7 = Number of workers assigned to shift 7 = 13*
+
+*We can thus determine, based on the achieved variable values, the number of employees available to work each day in relation to the objective function and the organization's constraints..*
+
+
+*Monday = x3 + x4 + x5 + x6 + x7 = 27 Workers*
+
+*Tuesday = x4 + x5 + x6 + x7 + x1 = 24 Workers*
+
+*Wednesday = x5 + x6 + x7 + x1 + x2 = 28 Workers*
+
+*Thursday = x6 + x7 + x1 + x2 + x3 = 25 Workers*
+
+*Friday = x7 + x1 + x2 + x3 + x4 = 24 Workers*
+
+*Saturday = x1 + x2 + x3 + x4 + x5 = 19 Workers*
+
+*Sunday = x2 + x3 + x4 + x5 + x6 = 18 Workers*
